@@ -26,7 +26,6 @@ export function getDescription(obj) {
 }
 
 export function getImage(obj) {
-  export function getImage(obj) {
   const image = pick(obj, ['imgUrl', 'imageUrl', 'image', 'photoUrl', 'thumbnailUrl']);
 
   if (!image) return undefined;
@@ -41,7 +40,6 @@ export function getImage(obj) {
   const backendBase = apiBase.replace(/\/api\/?$/, '');
 
   return `${backendBase}${image.startsWith('/') ? image : `/${image}`}`;
-}
 }
 
 export function getLocation(obj) {
