@@ -6,7 +6,7 @@ export default function HotelsPage() {
   return (
     <ListingPage
       title="Hotels"
-      subtitle="Places to stay, sorted by what the backend gives us."
+      subtitle="Places to stay."
       type="hotel"
       basePath="/hotels"
       fetcher={getAllHotels}

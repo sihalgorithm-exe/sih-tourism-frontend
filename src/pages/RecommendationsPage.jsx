@@ -29,7 +29,7 @@ export default function RecommendationsPage() {
         {!loading && !error && Array.isArray(data) && data.length === 0 && (
           <EmptyState
             title="No recommendations yet"
-            message="The backend didn't return any destinations for your account."
+            message="No destinations returned."
           />
         )}
 

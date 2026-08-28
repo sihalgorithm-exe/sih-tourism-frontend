@@ -25,7 +25,7 @@ export default function ListingPage({ title, subtitle, type, basePath, fetcher }
       {!loading && !error && Array.isArray(data) && data.length === 0 && (
         <EmptyState
           title="Nothing to show yet"
-          message="The backend didn't return any results for this category."
+          message="No results returned for this category."
         />
       )}
 
