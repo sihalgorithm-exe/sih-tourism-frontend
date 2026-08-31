@@ -1,4 +1,4 @@
-# Wayfare — Tourism Frontend
+# Wayfare: Tourism Frontend
 
 React + Vite + JavaScript (no TypeScript) frontend for the existing Spring Boot
 tourism backend at `sihalgorithm-exe/sih-tourism-backend`. Built strictly
