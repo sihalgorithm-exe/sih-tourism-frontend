@@ -120,7 +120,7 @@ export default function GroupsPage() {
 
           {knownIds.length > 0 && (
             <div className="mt-6 pt-6 border-t border-sage-300">
-              <p className="text-xs font-medium text-teal-400 mb-2">Recently visited</p>
+              <p className="text-xs font-medium text-teal-400 mb-2">Recently visited:</p>
               <div className="flex flex-wrap gap-2">
                 {knownIds.map((id) => (
                   <button

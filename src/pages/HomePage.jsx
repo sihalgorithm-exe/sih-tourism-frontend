@@ -44,7 +44,7 @@ export default function HomePage() {
               Every good trip starts with knowing where to go.
             </h1>
             <p className="text-teal-100 text-lg mb-8 max-w-lg">
-              Browse destinations, food, stays and transport in one place; keep your
+              Browse destinations, food, stays and transport in one place; Keep your
               travel group together with a live safety radius.
             </p>
             <div className="flex flex-wrap gap-3">
