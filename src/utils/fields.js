@@ -26,20 +26,23 @@ export function getDescription(obj) {
 }
 
 export function getImage(obj) {
-  const image = pick(obj, ['imgUrl', 'imageUrl', 'image', 'photoUrl', 'thumbnailUrl']);
+  const image = pick(obj, [
+    'imgUrl',
+    'imageUrl',
+    'image',
+    'photoUrl',
+    'thumbnailUrl'
+  ]);
 
   if (!image) return undefined;
 
+  // External image URL
   if (image.startsWith('http://') || image.startsWith('https://')) {
     return image;
   }
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-
-  // Remove /api from the API base URL
-  const backendBase = apiBase.replace(/\/api\/?$/, '');
-
-  return `${backendBase}${image.startsWith('/') ? image : `/${image}`}`;
+  // Local frontend image
+  return image.startsWith('/') ? image : `/${image}`;
 }
 
 export function getLocation(obj) {
