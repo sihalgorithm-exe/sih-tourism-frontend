@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import FormField from '../components/FormField.jsx';
 import { getErrorMessage } from '../utils/apiError.js';
+import { hasCompletedPreferences } from '../api/preferences.js';
 
 export default function LoginPage() {
   const { login, authError, clearAuthError } = useAuth();
@@ -25,7 +26,12 @@ export default function LoginPage() {
     try {
       await login(form);
       clearAuthError();
-      navigate(from, { replace: true });
+      const completed = await hasCompletedPreferences();
+      if (!completed) {
+        navigate('/preferences', { replace: true, state: { from, required: true } });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Could not log you in. Please check your details.'));
     } finally {

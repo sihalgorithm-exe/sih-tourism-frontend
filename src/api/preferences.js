@@ -16,3 +16,16 @@ export function getMyPreferences() {
 export function updateMyPreferences(payload) {
   return axiosClient.put('/preferences', payload).then((res) => res.data);
 }
+
+
+// Used right after login/register to decide whether to route to the survey.
+// The backend returns an empty body (parsed as null/undefined) when no
+// preferences row exists yet for the user - that's our "not completed" signal.
+export async function hasCompletedPreferences() {
+  try {
+    const data = await getMyPreferences();
+    return Boolean(data && data.id);
+  } catch {
+    return false;
+  }
+}

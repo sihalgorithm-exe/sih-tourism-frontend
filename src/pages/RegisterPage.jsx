@@ -24,7 +24,12 @@ export default function RegisterPage() {
     setError('');
     try {
       await register(form);
-      navigate(from, { replace: true });
+      const completed = await hasCompletedPreferences();
+      if (!completed) {
+        navigate('/preferences', { replace: true, state: { from, required: true } });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Could not create your account. Please try again.'));
     } finally {
