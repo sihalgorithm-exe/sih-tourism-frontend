@@ -12,6 +12,8 @@ export default function GroupsPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [joinError, setJoinError] = useState('');
+  const [createdGroupId, setCreatedGroupId] = useState(null);
+  const [createdGroupName, setCreatedGroupName] = useState('');
 
   const [joinId, setJoinId] = useState('');
 
