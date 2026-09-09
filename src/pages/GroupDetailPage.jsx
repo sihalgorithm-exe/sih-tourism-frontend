@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import {
   getGroup,
-  addGroupMember,
+  getGroupMembers,
   submitGroupLocation,
   getGroupAlerts,
 } from '../api/groups.js';
@@ -74,7 +74,7 @@ export default function GroupDetailPage() {
         <RadiusBadge radiusMeters={group.radiusMeters} />
         <div>
           <h1 className="font-display text-2xl font-semibold text-teal-700">{group.name}</h1>
-          <p className="text-sm text-teal-400 font-mono">Group #{group.groupId}</p>
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-sage-100 text-teal-700 text-xs font-medium">✓ You are in this group</div>
           <p className="text-sm text-ink/70 mt-1">
             Led by <span className="font-medium">{group.leaderName}</span>
             {isLeader && <span className="text-teal-600"> (you)</span>}
@@ -84,7 +84,7 @@ export default function GroupDetailPage() {
 
       <div className="grid gap-6">
         <LocationShareCard groupId={group.groupId ?? groupId} />
-        {isLeader && <AddMemberCard groupId={group.groupId ?? groupId} />}
+        {isLeader && <MembersCard groupId={group.groupId ?? groupId} />}
         {isLeader && <AlertsCard groupId={group.groupId ?? groupId} />}
       </div>
     </div>
@@ -116,7 +116,7 @@ function LocationShareCard({ groupId }) {
     <div className="bg-white border border-sage-300 rounded-xl2 p-6 shadow-soft">
       <h2 className="font-display text-lg font-semibold text-teal-700 mb-1">Share your location</h2>
       <p className="text-sm text-teal-400 mb-4">
-        Lets the leader know where you are relative to the group radius.
+         Share your current location so GroupGuard can track your position relative to the group.
       </p>
 
       <button
@@ -141,28 +141,129 @@ function LocationShareCard({ groupId }) {
   );
 }
 
-function AddMemberCard({ groupId }) {
-  const [userId, setUserId] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+function MembersCard({ groupId }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!userId.trim()) return;
-    setSubmitting(true);
+  const loadMembers = useCallback(() => {
+    setLoading(true);
     setError('');
-    setSuccess(false);
-    try {
-      await addGroupMember(groupId, Number(userId));
-      setSuccess(true);
-      setUserId('');
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not add that member.'));
-    } finally {
-      setSubmitting(false);
-    }
-  }
+
+    getGroupMembers(groupId)
+      .then(setData)
+      .catch((err) =>
+        setError(getErrorMessage(err, 'Could not load group members.'))
+      )
+      .finally(() => setLoading(false));
+  }, [groupId]);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
+  return (
+    <div className="bg-white border border-sage-300 rounded-xl2 p-6 shadow-soft">
+
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-display text-lg font-semibold text-teal-700">
+          Group members
+        </h2>
+
+        <button
+          onClick={loadMembers}
+          className="text-sm text-teal-600 hover:underline"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <p className="text-sm text-teal-400 mb-4">
+        See your teammates and their latest known locations.
+      </p>
+
+      {loading && <LoadingState label="Loading members…" />}
+
+      {!loading && error && (
+        <ErrorState message={error} onRetry={loadMembers} />
+      )}
+
+      {!loading &&
+        !error &&
+        data &&
+        Array.isArray(data.members) &&
+        data.members.length === 0 && (
+          <p className="text-sm text-teal-400 py-6 text-center">
+            No members have joined yet.
+          </p>
+        )}
+
+      {!loading &&
+        !error &&
+        data &&
+        Array.isArray(data.members) &&
+        data.members.length > 0 && (
+          <ul className="flex flex-col divide-y divide-sage-300">
+
+            {data.members.map((member) => (
+              <li
+                key={member.membershipId}
+                className="py-4 flex items-center justify-between gap-4"
+              >
+                <div>
+                  <p className="font-medium text-ink">
+                    {member.name}
+
+                    {member.leader && (
+                      <span className="ml-2 text-xs text-teal-600">
+                        Leader
+                      </span>
+                    )}
+                  </p>
+
+                  {member.latitude != null &&
+                    member.longitude != null ? (
+                    <p className="text-xs text-teal-400 font-mono mt-1">
+                      {member.latitude.toFixed(5)}, {member.longitude.toFixed(5)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-teal-400 mt-1">
+                      Location not shared yet
+                    </p>
+                  )}
+                </div>
+
+                <div className="text-right">
+
+                  {member.distanceMeters != null ? (
+                    <span className="font-mono text-sm text-teal-700 bg-sage-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+                      {Math.round(member.distanceMeters)}m away
+                    </span>
+                  ) : member.leader ? (
+                    <span className="text-xs text-teal-400">
+                      Reference
+                    </span>
+                  ) : (
+                    <span className="text-xs text-teal-400">
+                      No distance
+                    </span>
+                  )}
+
+                  {member.lastUpdated && (
+                    <p className="text-xs text-teal-400 mt-1">
+                      {new Date(member.lastUpdated).toLocaleTimeString()}
+                    </p>
+                  )}
+
+                </div>
+              </li>
+            ))}
+
+          </ul>
+        )}
+    </div>
+  );
+}
 
   return (
     <div className="bg-white border border-sage-300 rounded-xl2 p-6 shadow-soft">

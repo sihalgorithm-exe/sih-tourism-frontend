@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createGroup } from '../api/groups.js';
+import { createGroup, joinGroup } from '../api/groups.js';
 import { getKnownGroupIds, rememberGroupId } from '../utils/groupHistory.js';
 import { getErrorMessage } from '../utils/apiError.js';
 
@@ -11,6 +11,7 @@ export default function GroupsPage() {
   const [form, setForm] = useState({ name: '', radiusMeters: 500 });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [joinError, setJoinError] = useState('');
 
   const [joinId, setJoinId] = useState('');
 
@@ -34,12 +35,23 @@ export default function GroupsPage() {
     }
   }
 
-  function handleJoin(e) {
-    e.preventDefault();
-    if (!joinId.trim()) return;
-    rememberGroupId(joinId.trim());
-    navigate(`/groups/${joinId.trim()}`);
+ async function handleJoin(e) {
+  e.preventDefault();
+
+  if (!joinId.trim()) return;
+
+  setJoinError('');
+
+  try {
+    const group = await joinGroup(Number(joinId));
+
+    rememberGroupId(group.groupId);
+
+    navigate(`/groups/${group.groupId}`);
+  } catch (err) {
+    setJoinError(getErrorMessage(err, 'Could not join the group.'));
   }
+}
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
@@ -95,7 +107,7 @@ export default function GroupsPage() {
         </div>
 
         <div className="bg-white border border-sage-300 rounded-xl2 p-6 shadow-soft">
-          <h2 className="font-display text-lg font-semibold text-teal-700 mb-4">Open a group</h2>
+          <h2 className="font-display text-lg font-semibold text-teal-700 mb-4">Join a group</h2>
           <form onSubmit={handleJoin} className="flex flex-col gap-4">
             <label className="block">
               <span className="text-sm font-medium text-teal-700">Group ID</span>
@@ -107,14 +119,14 @@ export default function GroupsPage() {
                 className="mt-1.5 w-full px-3.5 py-2.5 rounded-lg border border-sage-500 bg-white focus:outline-none focus:ring-2 focus:ring-gold-500 font-mono"
               />
               <span className="mt-1 block text-xs text-teal-400">
-                Ask your group leader for the group ID to join.
+                Enter the Group ID shared by your team leader.
               </span>
             </label>
             <button
               type="submit"
               className="py-2.5 rounded-full font-semibold bg-gold-500 text-teal-700 hover:bg-gold-600 transition-colors"
             >
-              Open group
+              Join group
             </button>
           </form>
 
