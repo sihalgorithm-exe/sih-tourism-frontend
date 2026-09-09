@@ -74,6 +74,7 @@ export default function GroupDetailPage() {
         <RadiusBadge radiusMeters={group.radiusMeters} />
         <div>
           <h1 className="font-display text-2xl font-semibold text-teal-700">{group.name}</h1>
+          <p className="text-sm text-teal-400 mt-1"> Group ID: <span className="font-mono font-semibold text-teal-700">{group.groupId}</span> </p>
           <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-sage-100 text-teal-700 text-xs font-medium">✓ You are in this group</div>
           <p className="text-sm text-ink/70 mt-1">
             Led by <span className="font-medium">{group.leaderName}</span>

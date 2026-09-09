@@ -27,6 +27,8 @@ export default function GroupsPage() {
     try {
       const group = await createGroup(form);
       rememberGroupId(group.groupId);
+      setCreatedGroupId(group.groupId);
+      setCreatedGroupName(group.name);
       navigate(`/groups/${group.groupId}`);
     } catch (err) {
       setCreateError(getErrorMessage(err, 'Could not create the group.'));
