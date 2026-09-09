@@ -295,7 +295,7 @@ function MembersCard({ groupId }) {
       )}
     </div>
   );
-}
+
 
 function AlertsCard({ groupId }) {
   const [alerts, setAlerts] = useState(null);
