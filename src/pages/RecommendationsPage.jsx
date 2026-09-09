@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useApiData } from '../hooks/useApiData.js';
 import { getMyRecommendations } from '../api/recommendations.js';
 import PlaceCard from '../components/PlaceCard.jsx';
 import { LoadingState, ErrorState, EmptyState } from '../components/StateViews.jsx';
 import CategoryIcon from '../components/CategoryIcon.jsx';
 import { getId } from '../utils/fields.js';
-
-// TODO: point this at your actual feasibility checker route once it exists.
-const FEASIBILITY_CHECKER_URL = import.meta.env.VITE_FEASIBILITY_CHECKER_URL || 'https://trip-feasibility-checker.onrender.com';
+import {
+  buildFeasibilityPayload,
+  validateTripInputs,
+  redirectToFeasibilityChecker,
+} from '../utils/feasibility.js';
 
 export default function RecommendationsPage() {
   const { data, loading, error, refetch } = useApiData(getMyRecommendations, []);
   const [selectedIds, setSelectedIds] = useState([]);
-  const navigate = useNavigate();
+  const [showTripForm, setShowTripForm] = useState(false);
+  const [numberOfDays, setNumberOfDays] = useState('');
+  const [hoursPerDay, setHoursPerDay] = useState('');
+  const [tripError, setTripError] = useState('');
 
   function toggleSelect(id) {
     setSelectedIds((prev) =>
@@ -21,8 +26,35 @@ export default function RecommendationsPage() {
     );
   }
 
-  function handleContinue() {
-    navigate(FEASIBILITY_CHECKER_ROUTE, { state: { selectedDestinationIds: selectedIds } });
+  function handleContinueClick() {
+    setTripError('');
+    setShowTripForm(true);
+  }
+
+  function handleCheckFeasibility(e) {
+    e.preventDefault();
+
+    const validationError = validateTripInputs(numberOfDays, hoursPerDay);
+    if (validationError) {
+      setTripError(validationError);
+      return;
+    }
+
+    const selectedDestinations = (data || []).filter((item) =>
+      selectedIds.includes(getId(item))
+    );
+
+    if (selectedDestinations.length === 0) {
+      setTripError('Please select at least one destination.');
+      return;
+    }
+
+    try {
+      const payload = buildFeasibilityPayload(selectedDestinations, numberOfDays, hoursPerDay);
+      redirectToFeasibilityChecker(payload);
+    } catch (err) {
+      setTripError('One or more selected destinations are missing location or duration data.');
+    }
   }
 
   return (
@@ -69,7 +101,7 @@ export default function RecommendationsPage() {
         )}
       </div>
 
-      {selectedIds.length > 0 && (
+      {selectedIds.length > 0 && !showTripForm && (
         <div className="fixed bottom-0 left-0 right-0 bg-base border-t border-sage-300 shadow-lg">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex items-center justify-between">
             <p className="text-sm text-teal-700 font-medium">
@@ -77,12 +109,53 @@ export default function RecommendationsPage() {
             </p>
             <button
               type="button"
-              onClick={handleContinue}
+              onClick={handleContinueClick}
               className="px-6 py-2.5 rounded-full font-semibold bg-teal-600 text-base hover:bg-teal-700 transition-colors"
             >
               Continue
             </button>
           </div>
+        </div>
+      )}
+
+      {showTripForm && (
+        <div className="fixed bottom-0 left-0 right-0 bg-base border-t border-sage-300 shadow-lg">
+          <form
+            onSubmit={handleCheckFeasibility}
+            className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex flex-wrap items-end gap-4"
+          >
+            <label className="flex flex-col text-sm text-teal-700 font-medium">
+              Number of days
+              <input
+                type="number"
+                min="1"
+                value={numberOfDays}
+                onChange={(e) => setNumberOfDays(e.target.value)}
+                className="mt-1 w-32 px-3 py-2 rounded-lg border border-sage-500 bg-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+              />
+            </label>
+            <label className="flex flex-col text-sm text-teal-700 font-medium">
+              Hours per day
+              <input
+                type="number"
+                min="1"
+                value={hoursPerDay}
+                onChange={(e) => setHoursPerDay(e.target.value)}
+                className="mt-1 w-32 px-3 py-2 rounded-lg border border-sage-500 bg-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+              />
+            </label>
+
+            {tripError && (
+              <p className="text-sm text-clay-600 bg-clay-100 rounded-lg px-3 py-2">{tripError}</p>
+            )}
+
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-full font-semibold bg-teal-600 text-base hover:bg-teal-700 transition-colors"
+            >
+              Check Trip Feasibility
+            </button>
+          </form>
         </div>
       )}
     </div>

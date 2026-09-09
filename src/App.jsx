@@ -24,6 +24,7 @@ import GroupsPage from './pages/GroupsPage.jsx';
 import GroupDetailPage from './pages/GroupDetailPage.jsx';
 import PreferencesPage from './pages/PreferencesPage.jsx';
 import RecommendationsPage from './pages/RecommendationsPage.jsx';
+import ForYouPage from './pages/ForYouPage.jsx';
 
 export default function App() {
   return (
@@ -75,6 +76,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <RecommendationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/for-you"
+            element={
+              <ProtectedRoute>
+                <ForYouPage />
               </ProtectedRoute>
             }
           />

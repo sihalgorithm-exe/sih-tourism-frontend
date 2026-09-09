@@ -71,3 +71,8 @@ export function getLatLng(obj) {
 export function getId(obj) {
   return pick(obj, ['id']);
 }
+
+export function getVisitDurationHours(obj) {
+  const value = pick(obj, ['visitDurationHours', 'durationHours', 'duration']);
+  return value !== undefined ? Number(value) : undefined;
+}

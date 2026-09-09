@@ -48,8 +48,14 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
-          {isAuthenticated ? (
+                    {isAuthenticated ? (
             <>
+              <NavLink
+                to="/for-you"
+                className="px-3 py-2 rounded-full text-sm font-medium text-teal-600 hover:bg-sage-300 transition-colors"
+              >
+                For You
+              </NavLink>
               <NavLink
                 to="/preferences"
                 className="px-3 py-2 rounded-full text-sm font-medium text-teal-600 hover:bg-sage-300 transition-colors"
@@ -107,6 +113,9 @@ export default function Navbar() {
           <div className="h-px bg-sage-300 my-2" />
           {isAuthenticated ? (
             <>
+              <NavLink to="/for-you" className={navLinkClass} onClick={() => setOpen(false)}>
+                For You
+              </NavLink>
               <NavLink to="/preferences" className={navLinkClass} onClick={() => setOpen(false)}>
                 Preferences
               </NavLink>
