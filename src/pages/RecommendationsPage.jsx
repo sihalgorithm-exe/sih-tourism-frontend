@@ -1,16 +1,32 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApiData } from '../hooks/useApiData.js';
 import { getMyRecommendations } from '../api/recommendations.js';
 import PlaceCard from '../components/PlaceCard.jsx';
 import { LoadingState, ErrorState, EmptyState } from '../components/StateViews.jsx';
 import CategoryIcon from '../components/CategoryIcon.jsx';
+import { getId } from '../utils/fields.js';
+
+// TODO: point this at your actual feasibility checker route once it exists.
+const FEASIBILITY_CHECKER_ROUTE = '/feasibility-checker';
 
 export default function RecommendationsPage() {
   const { data, loading, error, refetch } = useApiData(getMyRecommendations, []);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const navigate = useNavigate();
+
+  function toggleSelect(id) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id]
+    );
+  }
+
+  function handleContinue() {
+    navigate(FEASIBILITY_CHECKER_ROUTE, { state: { selectedDestinationIds: selectedIds } });
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 pb-28">
       <div className="flex items-center gap-3 mb-1">
         <CategoryIcon type="destination" />
         <h1 className="font-display text-3xl font-semibold text-teal-700">Recommended for you</h1>
@@ -35,12 +51,40 @@ export default function RecommendationsPage() {
 
         {!loading && !error && Array.isArray(data) && data.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {data.map((item, idx) => (
-              <PlaceCard key={item?.id ?? idx} item={item} basePath="/destinations" type="destination" />
-            ))}
+            {data.map((item, idx) => {
+              const id = getId(item);
+              return (
+                <PlaceCard
+                  key={id ?? idx}
+                  item={item}
+                  basePath="/destinations"
+                  type="destination"
+                  selectable
+                  isSelected={selectedIds.includes(id)}
+                  onToggleSelect={toggleSelect}
+                />
+              );
+            })}
           </div>
         )}
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-base border-t border-sage-300 shadow-lg">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex items-center justify-between">
+            <p className="text-sm text-teal-700 font-medium">
+              {selectedIds.length} destination{selectedIds.length > 1 ? 's' : ''} selected
+            </p>
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="px-6 py-2.5 rounded-full font-semibold bg-teal-600 text-base hover:bg-teal-700 transition-colors"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

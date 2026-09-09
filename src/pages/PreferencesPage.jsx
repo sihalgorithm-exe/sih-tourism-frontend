@@ -108,7 +108,7 @@ export default function PreferencesPage() {
         travelingWith,
         budgetLevel: budget,
       });
-      navigate(from, { replace: true });
+            navigate('/recommendations', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save your preferences. Please try again.'));
     } finally {

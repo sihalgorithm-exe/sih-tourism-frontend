@@ -16,7 +16,7 @@ import {
  * Renders whatever fields the backend actually returned for this object.
  * Nothing is assumed to exist — see utils/fields.js.
  */
-export default function PlaceCard({ item, basePath, type }) {
+export default function PlaceCard({ item, basePath, type, selectable = false, isSelected = false, onToggleSelect }) {
   const id = getId(item);
   const name = getName(item) || 'Untitled';
   const description = getDescription(item);
@@ -41,10 +41,30 @@ export default function PlaceCard({ item, basePath, type }) {
             <CategoryIcon type={type} bg="bg-teal-400" />
           </div>
         )}
-        {rating !== undefined && (
+                {rating !== undefined && (
           <span className="absolute top-2 right-2 bg-base/90 text-teal-600 text-xs font-mono font-medium px-2 py-1 rounded-full">
             ★ {rating}
           </span>
+        )}
+        {selectable && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleSelect?.(id);
+            }}
+            aria-pressed={isSelected}
+            aria-label={isSelected ? 'Remove from selection' : 'Select this destination'}
+            className={[
+              'absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-colors',
+              isSelected
+                ? 'bg-teal-600 border-teal-600 text-base'
+                : 'bg-white/90 border-sage-300 text-transparent hover:border-teal-600',
+            ].join(' ')}
+          >
+            ✓
+          </button>
         )}
       </div>
 
