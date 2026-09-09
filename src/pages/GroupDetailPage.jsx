@@ -265,37 +265,6 @@ function MembersCard({ groupId }) {
   );
 }
 
-  return (
-    <div className="bg-white border border-sage-300 rounded-xl2 p-6 shadow-soft">
-      <h2 className="font-display text-lg font-semibold text-teal-700 mb-1">Add a member</h2>
-      <p className="text-sm text-teal-400 mb-4">Only you, as leader, can add members.</p>
-
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="number"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="User ID"
-          className="flex-1 px-3.5 py-2.5 rounded-lg border border-sage-500 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
-        />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-5 py-2.5 rounded-full font-semibold bg-gold-500 text-teal-700 hover:bg-gold-600 disabled:opacity-60 transition-colors whitespace-nowrap"
-        >
-          {submitting ? 'Adding…' : 'Add member'}
-        </button>
-      </form>
-
-      {error && (
-        <p className="mt-3 text-sm text-clay-600 bg-clay-100 rounded-lg px-3 py-2">{error}</p>
-      )}
-      {success && (
-        <p className="mt-3 text-sm text-teal-600 bg-sage-100 rounded-lg px-3 py-2">Member added.</p>
-      )}
-    </div>
-  );
-
 
 function AlertsCard({ groupId }) {
   const [alerts, setAlerts] = useState(null);
