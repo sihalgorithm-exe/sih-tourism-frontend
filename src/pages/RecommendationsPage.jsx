@@ -8,7 +8,7 @@ import CategoryIcon from '../components/CategoryIcon.jsx';
 import { getId } from '../utils/fields.js';
 
 // TODO: point this at your actual feasibility checker route once it exists.
-const FEASIBILITY_CHECKER_ROUTE = '/feasibility-checker';
+const FEASIBILITY_CHECKER_ROUTE = 'https://trip-feasibility-checker.onrender.com';
 
 export default function RecommendationsPage() {
   const { data, loading, error, refetch } = useApiData(getMyRecommendations, []);
