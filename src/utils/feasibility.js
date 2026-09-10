@@ -78,7 +78,7 @@ export function encodeFeasibilityPayload(payload) {
  * Router) since the checker is a separate deployed application.
  */
 export function redirectToFeasibilityChecker(payload) {
-  const baseUrl = import.meta.env.VITE_FEASIBILITY_URL;
+  const baseUrl = import.meta.env.VITE_FEASIBILITY_CHECKER_URL;
   const encoded = encodeFeasibilityPayload(payload);
   window.location.href = `${baseUrl}/?data=${encoded}`;
 }
