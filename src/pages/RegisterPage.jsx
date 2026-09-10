@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import FormField from '../components/FormField.jsx';
 import { getErrorMessage } from '../utils/apiError.js';
+import { hasCompletedPreferences } from '../api/preferences.js';
 
 export default function RegisterPage() {
   const { register } = useAuth();

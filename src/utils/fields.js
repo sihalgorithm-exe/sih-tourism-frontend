@@ -72,7 +72,31 @@ export function getId(obj) {
   return pick(obj, ['id']);
 }
 
+export function parseDurationHours(text) {
+  if (!text || typeof text !== 'string') return undefined;
+
+  let match = text.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*hours?/i);
+  if (match) return (parseFloat(match[1]) + parseFloat(match[2])) / 2;
+
+  match = text.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*minutes?/i);
+  if (match) return ((parseFloat(match[1]) + parseFloat(match[2])) / 2) / 60;
+
+  match = text.match(/(\d+(?:\.\d+)?)\s*hours?/i);
+  if (match) return parseFloat(match[1]);
+
+  match = text.match(/(\d+(?:\.\d+)?)\s*minutes?/i);
+  if (match) return parseFloat(match[1]) / 60;
+
+  if (/full day/i.test(text)) return 8;
+  if (/half day/i.test(text)) return 4;
+
+  return undefined;
+}
+
 export function getVisitDurationHours(obj) {
   const value = pick(obj, ['visitDurationHours', 'durationHours', 'duration']);
-  return value !== undefined ? Number(value) : undefined;
+  if (value !== undefined) return Number(value);
+
+  const text = pick(obj, ['recommendedVisitDuration']);
+  return parseDurationHours(text);
 }
