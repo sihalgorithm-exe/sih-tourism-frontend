@@ -1,4 +1,49 @@
-import { getId, getName, getLatLng, getVisitDurationHours } from './fields.js';
+import { getId, getName, getLatLng, getVisitDurationHours, pick } from './fields.js';
+
+function parseAveragePrice(text) {
+  if (!text || typeof text !== 'string') return undefined;
+  const numbers = text.match(/[\d,]+(?:\.\d+)?/g);
+  if (!numbers || numbers.length === 0) return undefined;
+  const values = numbers.map((n) => parseFloat(n.replace(/,/g, '')));
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+function parseAverageRating(text) {
+  if (!text || typeof text !== 'string') return undefined;
+  const beforeSlash = text.split('/')[0]; // drop the "/5" in "4.3-4.5/5"
+  const numbers = beforeSlash.match(/\d+(?:\.\d+)?/g);
+  if (!numbers || numbers.length === 0) return undefined;
+  const avg = numbers.map(parseFloat).reduce((a, b) => a + b, 0) / numbers.length;
+  return Math.min(5, avg);
+}
+
+/**
+ * Maps a raw backend Hotel object to the exact shape the AI Planner
+ * requires. The Hotel entity has no lat/lng of its own, so it falls back
+ * to the trip's destination coordinates (hotels are within the same
+ * city, so this is close enough for routing purposes).
+ */
+export function mapHotelToFeasibility(hotel, fallbackLatLng) {
+  const id = getId(hotel);
+  const name = getName(hotel);
+  const latLng = getLatLng(hotel) || fallbackLatLng;
+  const pricePerNight =
+    pick(hotel, ['pricePerNight']) ?? parseAveragePrice(pick(hotel, ['priceRange', 'price']));
+  const rating = pick(hotel, ['rating']) ?? parseAverageRating(pick(hotel, ['ratingText']));
+
+  if (!name || !latLng || pricePerNight === undefined || rating === undefined) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    latitude: latLng.lat,
+    longitude: latLng.lng,
+    pricePerNight: Number(pricePerNight),
+    rating: Number(rating),
+  };
+}
 
 /**
  * Maps a single Wayfare destination object to the exact shape the
@@ -61,6 +106,11 @@ export function buildFeasibilityPayload(
     throw new Error('One or more selected destinations are missing required data.');
   }
 
+    const fallbackLatLng = { lat: mapped[0].latitude, lng: mapped[0].longitude };
+  const mappedHotels = (options.hotels || [])
+    .map((h) => mapHotelToFeasibility(h, fallbackLatLng))
+    .filter((h) => h !== null);
+
   return {
     trip: {
       city: options.city || '',
@@ -68,7 +118,7 @@ export function buildFeasibilityPayload(
       hoursPerDay: Number(hoursPerDay),
     },
     destinations: mapped,
-    hotels: options.hotels || [],
+    hotels: mappedHotels,
     preferences: options.preferences || {},
   };
 }

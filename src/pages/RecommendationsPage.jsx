@@ -53,12 +53,13 @@ export default function RecommendationsPage() {
     try {
   const hotels = await getAllHotels();
 
-  const payload = buildFeasibilityPayload(
+    const payload = buildFeasibilityPayload(
     selectedDestinations,
     numberOfDays,
     hoursPerDay,
     {
       hotels,
+      city: selectedDestinations[0]?.city || '',
     }
   );
 
