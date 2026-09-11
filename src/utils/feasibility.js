@@ -27,11 +27,14 @@ export function mapHotelToFeasibility(hotel, fallbackLatLng) {
   const id = getId(hotel);
   const name = getName(hotel);
   const latLng = getLatLng(hotel) || fallbackLatLng;
-  const pricePerNight =
-    pick(hotel, ['pricePerNight']) ?? parseAveragePrice(pick(hotel, ['priceRange', 'price']));
-  const rating = pick(hotel, ['rating']) ?? parseAverageRating(pick(hotel, ['ratingText']));
+    const pricePerNight =
+    pick(hotel, ['pricePerNight']) ?? parseAveragePrice(pick(hotel, ['priceRange', 'price'])) ?? 0;
+  const rating = pick(hotel, ['rating']) ?? parseAverageRating(pick(hotel, ['ratingText'])) ?? 0;
 
-  if (!name || !latLng || pricePerNight === undefined || rating === undefined) {
+  // Only name/coordinates are truly non-negotiable. Price/rating fall back to
+  // 0 rather than dropping the hotel entirely -- an incomplete hotel card is
+  // recoverable in the UI; an empty hotels array kills the whole AI plan.
+  if (!name || !latLng) {
     return null;
   }
 
