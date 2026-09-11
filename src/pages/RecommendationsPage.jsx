@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApiData } from '../hooks/useApiData.js';
 import { getMyRecommendations } from '../api/recommendations.js';
+import { getAllHotels } from '../api/hotels.js';
 import PlaceCard from '../components/PlaceCard.jsx';
 import { LoadingState, ErrorState, EmptyState } from '../components/StateViews.jsx';
 import CategoryIcon from '../components/CategoryIcon.jsx';
@@ -31,7 +32,7 @@ export default function RecommendationsPage() {
     setShowTripForm(true);
   }
 
-  function handleCheckFeasibility(e) {
+  async function handleCheckFeasibility(e) {
     e.preventDefault();
 
     const validationError = validateTripInputs(numberOfDays, hoursPerDay);
@@ -50,11 +51,22 @@ export default function RecommendationsPage() {
     }
 
     try {
-      const payload = buildFeasibilityPayload(selectedDestinations, numberOfDays, hoursPerDay);
-      redirectToFeasibilityChecker(payload);
-    } catch (err) {
-      setTripError('One or more selected destinations are missing location or duration data.');
+  const hotels = await getAllHotels();
+
+  const payload = buildFeasibilityPayload(
+    selectedDestinations,
+    numberOfDays,
+    hoursPerDay,
+    {
+      hotels,
     }
+  );
+
+  redirectToFeasibilityChecker(payload);
+} catch (err) {
+  console.error(err);
+  setTripError('Could not prepare the trip. Please try again.');
+}
   }
 
   return (

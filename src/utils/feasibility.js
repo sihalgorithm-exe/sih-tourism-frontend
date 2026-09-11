@@ -35,18 +35,26 @@ export function validateTripInputs(numberOfDays, hoursPerDay) {
   if (!Number.isFinite(days) || days <= 0) {
     return 'Please enter a valid number of days.';
   }
+
   if (!Number.isFinite(hours) || hours <= 0) {
     return 'Please enter valid hours per day.';
   }
+
   return null;
 }
 
 /**
- * Builds the full feasibility payload from selected Wayfare destination
- * objects and trip inputs. Throws if any destination is missing required
- * fields, so callers must validate/catch before redirecting.
+ * Builds the full payload from selected Wayfare destination objects
+ * and trip inputs.
+ *
+ * Extra trip data is preserved for the AI Planner handoff.
  */
-export function buildFeasibilityPayload(selectedDestinations, numberOfDays, hoursPerDay) {
+export function buildFeasibilityPayload(
+  selectedDestinations,
+  numberOfDays,
+  hoursPerDay,
+  options = {}
+) {
   const mapped = selectedDestinations.map(mapDestinationToFeasibility);
 
   if (mapped.some((d) => d === null)) {
@@ -55,10 +63,13 @@ export function buildFeasibilityPayload(selectedDestinations, numberOfDays, hour
 
   return {
     trip: {
+      city: options.city || '',
       numberOfDays: Number(numberOfDays),
       hoursPerDay: Number(hoursPerDay),
     },
     destinations: mapped,
+    hotels: options.hotels || [],
+    preferences: options.preferences || {},
   };
 }
 
@@ -68,17 +79,25 @@ export function buildFeasibilityPayload(selectedDestinations, numberOfDays, hour
 export function encodeFeasibilityPayload(payload) {
   const json = JSON.stringify(payload);
   const base64 = btoa(unescape(encodeURIComponent(json)));
-  const urlSafe = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  const urlSafe = base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
   return encodeURIComponent(urlSafe);
 }
 
 /**
  * Redirects the browser to the deployed Feasibility Checker with the
- * encoded payload attached. This is a full page navigation (not React
- * Router) since the checker is a separate deployed application.
+ * encoded payload attached.
  */
 export function redirectToFeasibilityChecker(payload) {
-  const baseUrl = import.meta.env.VITE_FEASIBILITY_CHECKER_URL;
+  const baseUrl =
+    import.meta.env.VITE_FEASIBILITY_CHECKER_URL ||
+    'https://trip-feasibility-checker.onrender.com';
+
   const encoded = encodeFeasibilityPayload(payload);
+
   window.location.href = `${baseUrl}/?data=${encoded}`;
 }
