@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApiData } from '../hooks/useApiData.js';
 import { getMyRecommendations } from '../api/recommendations.js';
-import { getAllHotels } from '../api/hotels.js';
+import { getHotelsByCity } from '../api/hotels.js';
 import PlaceCard from '../components/PlaceCard.jsx';
 import { LoadingState, ErrorState, EmptyState } from '../components/StateViews.jsx';
 import CategoryIcon from '../components/CategoryIcon.jsx';
@@ -50,8 +50,9 @@ export default function RecommendationsPage() {
       return;
     }
 
-    try {
-  const hotels = await getAllHotels();
+        try {
+  const tripCity = selectedDestinations[0]?.city || '';
+  const hotels = tripCity ? await getHotelsByCity(tripCity) : [];
 
     const payload = buildFeasibilityPayload(
     selectedDestinations,
@@ -59,7 +60,7 @@ export default function RecommendationsPage() {
     hoursPerDay,
     {
       hotels,
-      city: selectedDestinations[0]?.city || '',
+      city: tripCity,
     }
   );
 
