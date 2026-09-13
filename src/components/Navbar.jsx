@@ -56,11 +56,17 @@ export default function Navbar() {
               >
                 For You
               </NavLink>
-              <NavLink
+                            <NavLink
                 to="/preferences"
                 className="px-3 py-2 rounded-full text-sm font-medium text-teal-600 hover:bg-sage-300 transition-colors"
               >
-                {user?.name?.split(' ')[0] || 'Preferences'}
+                Preferences
+              </NavLink>
+              <NavLink
+                to="/profile"
+                className="px-3 py-2 rounded-full text-sm font-medium text-teal-600 hover:bg-sage-300 transition-colors"
+              >
+                {user?.name?.split(' ')[0] || 'Profile'}
               </NavLink>
               <button
                 onClick={handleLogout}
@@ -118,6 +124,9 @@ export default function Navbar() {
               </NavLink>
               <NavLink to="/preferences" className={navLinkClass} onClick={() => setOpen(false)}>
                 Preferences
+              </NavLink>
+              <NavLink to="/profile" className={navLinkClass} onClick={() => setOpen(false)}>
+                {user?.name?.split(' ')[0] || 'Profile'}
               </NavLink>
               <button
                 onClick={handleLogout}
