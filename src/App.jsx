@@ -8,7 +8,7 @@ import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
-
+import ProfilePage from './pages/ProfilePage.jsx';
 import DestinationsPage from './pages/DestinationsPage.jsx';
 import DestinationDetailPage from './pages/DestinationDetailPage.jsx';
 import FoodPage from './pages/FoodPage.jsx';
@@ -71,6 +71,15 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/recommendations"
             element={
