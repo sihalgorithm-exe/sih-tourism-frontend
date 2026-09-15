@@ -7,7 +7,8 @@ import {
   getGroupMembers,
   submitGroupLocation,
   getGroupAlerts,
-} from '../api/groups.js';
+  getMyGuardStatus,
+  submitGuardResponse, } from '../api/groups.js';
 import { rememberGroupId } from '../utils/groupHistory.js';
 import { LoadingState, ErrorState } from '../components/StateViews.jsx';
 import { getErrorMessage } from '../utils/apiError.js';
@@ -20,6 +21,114 @@ function RadiusBadge({ radiusMeters }) {
       <span className="relative font-mono text-xs font-semibold text-teal-700 text-center leading-tight">
         {radiusMeters}m
       </span>
+    </div>
+  );
+}
+
+function GuardPromptCard({ groupId }) {
+  const [status, setStatus] = useState(null);
+  const [responding, setResponding] = useState(false);
+  const [respondError, setRespondError] = useState('');
+
+  const poll = useCallback(() => {
+    getMyGuardStatus(groupId)
+      .then(setStatus)
+      .catch(() => {}); // silent - this is a background poll, not a user-triggered action
+  }, [groupId]);
+
+  useEffect(() => {
+    poll();
+    const interval = setInterval(poll, 15000); // reuses the same manual-refresh data source, just automated
+    return () => clearInterval(interval);
+  }, [poll]);
+
+  async function respond(response) {
+    setRespondError('');
+    setResponding(true);
+    try {
+      await submitGuardResponse(groupId, response);
+      poll();
+    } catch (err) {
+      setRespondError(getErrorMessage(err, 'Could not send your response.'));
+    } finally {
+      setResponding(false);
+    }
+  }
+
+  if (!status || (status.guardStatus !== 'PENDING_RESPONSE' && status.guardStatus !== 'NO_RESPONSE')) {
+    return null;
+  }
+
+  const canDirectToGroup =
+    status.myLatitude != null && status.myLongitude != null &&
+    status.leaderLatitude != null && status.leaderLongitude != null;
+
+  return (
+    <div className="bg-clay-50 border border-clay-300 rounded-xl2 p-6 shadow-soft">
+      <h2 className="font-display text-lg font-semibold text-clay-700 mb-1">Are you lost?</h2>
+      <p className="text-sm text-clay-600 mb-4">
+        You appear to be outside your group's safe range.
+        {status.guardStatus === 'NO_RESPONSE' && ' Your group leader has been notified that you have not responded yet.'}
+      </p>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={() => respond('SAFE')}
+          disabled={responding}
+          className="px-4 py-2 rounded-full font-semibold bg-sage-100 text-teal-700 hover:bg-sage-200 disabled:opacity-60"
+        >
+          I'm Safe
+        </button>
+        <button
+          onClick={() => respond('LOST')}
+          disabled={responding}
+          className="px-4 py-2 rounded-full font-semibold bg-gold-100 text-teal-700 hover:bg-gold-200 disabled:opacity-60"
+        >
+          I'm Lost
+        </button>
+        <button
+          onClick={() => respond('NEEDS_HELP')}
+          disabled={responding}
+          className="px-4 py-2 rounded-full font-semibold bg-clay-600 text-white hover:bg-clay-700 disabled:opacity-60"
+        >
+          I Need Help
+        </button>
+      </div>
+
+      {respondError && (
+        <p className="mt-3 text-sm text-clay-600 bg-clay-100 rounded-lg px-3 py-2">{respondError}</p>
+      )}
+    </div>
+  );
+}
+
+function LostDirectionsCard({ groupId }) {
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    getMyGuardStatus(groupId).then(setStatus).catch(() => {});
+  }, [groupId]);
+
+  if (!status || status.guardStatus !== 'LOST') return null;
+  if (status.myLatitude == null || status.leaderLatitude == null) return null;
+
+  // Reuses the exact same external-Google-Maps-link pattern already used on
+  // DetailPage.jsx - the project has no embedded map/directions component,
+  // so this is the minimum integration rather than adding a new map system.
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${status.myLatitude},${status.myLongitude}&destination=${status.leaderLatitude},${status.leaderLongitude}`;
+
+  return (
+    <div className="bg-white border border-sage-300 rounded-xl2 p-6 shadow-soft">
+      <h2 className="font-display text-lg font-semibold text-teal-700 mb-1">Find your way back</h2>
+      <p className="text-sm text-teal-400 mb-4">Get directions to your group leader's last known location.</p>
+      
+        href={directionsUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-block px-5 py-2.5 rounded-full font-semibold bg-teal-600 text-white hover:bg-teal-700"
+      >
+        Get directions
+      </a>
     </div>
   );
 }
@@ -84,6 +193,8 @@ export default function GroupDetailPage() {
       </div>
 
       <div className="grid gap-6">
+        <GuardPromptCard groupId={group.groupId ?? groupId} />
+        <LostDirectionsCard groupId={group.groupId ?? groupId} />
         <LocationShareCard groupId={group.groupId ?? groupId} />
         {isLeader && <MembersCard groupId={group.groupId ?? groupId} />}
         {isLeader && <AlertsCard groupId={group.groupId ?? groupId} />}
@@ -315,9 +426,27 @@ function AlertsCard({ groupId }) {
                   {new Date(alert.triggeredAt).toLocaleString()}
                 </p>
               </div>
-              <span className="font-mono text-sm text-clay-600 bg-clay-100 px-2.5 py-1 rounded-full whitespace-nowrap">
-                {Math.round(alert.distanceMeters)}m away
-              </span>
+              <div className="flex flex-col items-end gap-1">
+                {alert.alertType && alert.alertType !== 'OUT_OF_RANGE' && (
+                  <span
+                    className={
+                      'text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ' +
+                      (alert.alertType === 'NEEDS_HELP'
+                        ? 'bg-clay-600 text-white'
+                        : alert.alertType === 'NO_RESPONSE'
+                        ? 'bg-clay-500 text-white'
+                        : 'bg-gold-100 text-teal-700')
+                    }
+                  >
+                    {alert.alertType === 'NEEDS_HELP' && 'Needs help'}
+                    {alert.alertType === 'LOST' && "Reported lost"}
+                    {alert.alertType === 'NO_RESPONSE' && 'No response'}
+                  </span>
+                )}
+                <span className="font-mono text-sm text-clay-600 bg-clay-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+                  {Math.round(alert.distanceMeters)}m away
+                </span>
+              </div>
             </li>
           ))}
         </ul>

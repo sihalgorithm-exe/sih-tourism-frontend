@@ -41,3 +41,15 @@ export function getGroupAlerts(groupId) {
     .get(`/groups/${groupId}/alerts`)
     .then((res) => res.data);
 }
+
+export function getMyGuardStatus(groupId) {
+  return axiosClient
+    .get(`/groups/${groupId}/my-status`)
+    .then((res) => res.data);
+}
+
+export function submitGuardResponse(groupId, response) {
+  return axiosClient
+    .post(`/groups/${groupId}/guard-response`, { response })
+    .then((res) => res.data);
+}
