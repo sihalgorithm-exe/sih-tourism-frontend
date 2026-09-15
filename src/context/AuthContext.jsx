@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { isTokenExpired } from '../utils/jwt.js';
 import * as authApi from '../api/auth';
 
 const AuthContext = createContext(null);
@@ -16,6 +17,15 @@ function readStoredUser() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(readStoredUser);
   const [token, setToken] = useState(() => localStorage.getItem('authToken'));
+    useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token && isTokenExpired(token)) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  }, []);
   const [authError, setAuthError] = useState('');
 
   // If any API call comes back 401, treat the session as expired.
