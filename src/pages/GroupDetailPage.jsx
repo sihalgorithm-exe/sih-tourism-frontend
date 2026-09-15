@@ -122,7 +122,7 @@ function LostDirectionsCard({ groupId }) {
       <h2 className="font-display text-lg font-semibold text-teal-700 mb-1">Find your way back</h2>
       <p className="text-sm text-teal-400 mb-4">Get directions to your group leader's last known location.</p>
       
-        href={directionsUrl}
+       <a href={directionsUrl}
         target="_blank"
         rel="noreferrer"
         className="inline-block px-5 py-2.5 rounded-full font-semibold bg-teal-600 text-white hover:bg-teal-700"
