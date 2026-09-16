@@ -12,6 +12,8 @@ import {
 import { rememberGroupId } from '../utils/groupHistory.js';
 import { LoadingState, ErrorState } from '../components/StateViews.jsx';
 import { getErrorMessage } from '../utils/apiError.js';
+import { useNavigate } from 'react-router-dom';
+import { leaveGroup, terminateGroup } from '../api/groups.js';
 
 function RadiusBadge({ radiusMeters }) {
   return (
@@ -158,6 +160,35 @@ export default function GroupDetailPage() {
   }, [loadGroup]);
 
   const isLeader = Boolean(group && user && group.leaderId === user.userId);
+    const navigate = useNavigate();
+  const [actionError, setActionError] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  async function handleLeave() {
+    if (!window.confirm('Leave this group? You will stop being tracked and lose access to it.')) return;
+    setActionError('');
+    setActionLoading(true);
+    try {
+      await leaveGroup(group.groupId ?? groupId);
+      navigate('/groups');
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Could not leave the group.'));
+      setActionLoading(false);
+    }
+  }
+
+  async function handleTerminate() {
+    if (!window.confirm('Terminate this group for everyone? This cannot be undone.')) return;
+    setActionError('');
+    setActionLoading(true);
+    try {
+      await terminateGroup(group.groupId ?? groupId);
+      navigate('/groups');
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Could not terminate the group.'));
+      setActionLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -189,8 +220,34 @@ export default function GroupDetailPage() {
             Led by <span className="font-medium">{group.leaderName}</span>
             {isLeader && <span className="text-teal-600"> (you)</span>}
           </p>
+
+                    <div className="mt-3">
+            {isLeader ? (
+              <button
+                onClick={handleTerminate}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-clay-100 text-clay-700 hover:bg-clay-200 disabled:opacity-60 transition-colors"
+              >
+                {actionLoading ? 'Terminating…' : 'Terminate group'}
+              </button>
+            ) : (
+              <button
+                onClick={handleLeave}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-clay-100 text-clay-700 hover:bg-clay-200 disabled:opacity-60 transition-colors"
+              >
+                {actionLoading ? 'Leaving…' : 'Leave group'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+            {actionError && (
+        <p className="mb-6 text-sm text-clay-600 bg-clay-100 rounded-lg px-3 py-2">
+          {actionError}
+        </p>
+      )}
 
       <div className="grid gap-6">
         <GuardPromptCard groupId={group.groupId ?? groupId} />

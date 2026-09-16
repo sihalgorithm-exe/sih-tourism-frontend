@@ -53,3 +53,11 @@ export function submitGuardResponse(groupId, response) {
     .post(`/groups/${groupId}/guard-response`, { response })
     .then((res) => res.data);
 }
+
+export function leaveGroup(groupId) {
+  return axiosClient.delete(`/groups/${groupId}/leave`).then((res) => res.data);
+}
+
+export function terminateGroup(groupId) {
+  return axiosClient.delete(`/groups/${groupId}`).then((res) => res.data);
+}
