@@ -12,6 +12,8 @@ import {
   validateTripInputs,
   redirectToFeasibilityChecker,
 } from '../utils/feasibility.js';
+import { getAllHotels } from '../api/hotels.js';
+import { getAllTravelEstimates } from '../api/travelEstimates.js';
 
 export default function RecommendationsPage() {
   const { data, loading, error, refetch } = useApiData(getMyRecommendations, []);
@@ -20,10 +22,25 @@ export default function RecommendationsPage() {
   const [numberOfDays, setNumberOfDays] = useState('');
   const [hoursPerDay, setHoursPerDay] = useState('');
   const [tripError, setTripError] = useState('');
+  const [budgetPreset, setBudgetPreset] = useState('');
+  const [customBudget, setCustomBudget] = useState('');
+
+  const BUDGET_PRESETS = {
+    budget: 5000,
+    moderate: 15000,
+    premium: 35000,
+  };
+
+  function handlePresetClick(preset) {
+    setBudgetPreset(preset);
+    setCustomBudget(String(BUDGET_PRESETS[preset]));
+  }
 
   function toggleSelect(id) {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((existing) => existing !== id)
+        : [...prev, id]
     );
   }
 
@@ -36,6 +53,7 @@ export default function RecommendationsPage() {
     e.preventDefault();
 
     const validationError = validateTripInputs(numberOfDays, hoursPerDay);
+
     if (validationError) {
       setTripError(validationError);
       return;
@@ -50,77 +68,100 @@ export default function RecommendationsPage() {
       return;
     }
 
-        try {
-  const tripCity = selectedDestinations[0]?.city || '';
-  const hotels = tripCity ? await getHotelsByCity(tripCity) : [];
+    try {
+      const [hotels, travelEstimates] = await Promise.all([
+        getAllHotels(),
+        getAllTravelEstimates(),
+      ]);
 
-    const payload = buildFeasibilityPayload(
-    selectedDestinations,
-    numberOfDays,
-    hoursPerDay,
-    {
-      hotels,
-      city: tripCity,
+      const payload = buildFeasibilityPayload(
+        selectedDestinations,
+        numberOfDays,
+        hoursPerDay,
+        {
+          hotels,
+          travelEstimates,
+          totalBudget: customBudget,
+        }
+      );
+
+      redirectToFeasibilityChecker(payload);
+    } catch (err) {
+      console.error(err);
+      setTripError('Could not prepare the trip. Please try again.');
     }
-  );
-
-  redirectToFeasibilityChecker(payload);
-} catch (err) {
-  console.error(err);
-  setTripError('Could not prepare the trip. Please try again.');
-}
   }
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 pb-28">
       <div className="flex items-center gap-3 mb-1">
         <CategoryIcon type="destination" />
-        <h1 className="font-display text-3xl font-semibold text-teal-700">Recommended for you</h1>
+        <h1 className="font-display text-3xl font-semibold text-teal-700">
+          Recommended for you
+        </h1>
       </div>
+
       <p className="text-teal-400 mb-1">
-        Based on your saved preferences, or overall popularity if you haven&apos;t set any yet.
+        Based on your saved preferences, or overall popularity if you haven&apos;t
+        set any yet.
       </p>
-      <Link to="/preferences" className="text-sm text-teal-600 hover:underline">
+
+      <Link
+        to="/preferences"
+        className="text-sm text-teal-600 hover:underline"
+      >
         Update your preferences →
       </Link>
 
       <div className="mt-8">
         {loading && <LoadingState label="Finding recommendations…" />}
-        {!loading && error && <ErrorState message={error} onRetry={refetch} />}
 
-        {!loading && !error && Array.isArray(data) && data.length === 0 && (
-          <EmptyState
-            title="No recommendations yet"
-            message="No destinations returned."
-          />
+        {!loading && error && (
+          <ErrorState message={error} onRetry={refetch} />
         )}
 
-        {!loading && !error && Array.isArray(data) && data.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {data.map((item, idx) => {
-              const id = getId(item);
-              return (
-                <PlaceCard
-                  key={id ?? idx}
-                  item={item}
-                  basePath="/destinations"
-                  type="destination"
-                  selectable
-                  isSelected={selectedIds.includes(id)}
-                  onToggleSelect={toggleSelect}
-                />
-              );
-            })}
-          </div>
-        )}
+        {!loading &&
+          !error &&
+          Array.isArray(data) &&
+          data.length === 0 && (
+            <EmptyState
+              title="No recommendations yet"
+              message="No destinations returned."
+            />
+          )}
+
+        {!loading &&
+          !error &&
+          Array.isArray(data) &&
+          data.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {data.map((item, idx) => {
+                const id = getId(item);
+
+                return (
+                  <PlaceCard
+                    key={id ?? idx}
+                    item={item}
+                    basePath="/destinations"
+                    type="destination"
+                    selectable
+                    isSelected={selectedIds.includes(id)}
+                    onToggleSelect={toggleSelect}
+                  />
+                );
+              })}
+            </div>
+          )}
       </div>
 
       {selectedIds.length > 0 && !showTripForm && (
         <div className="fixed bottom-0 left-0 right-0 bg-base border-t border-sage-300 shadow-lg">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex items-center justify-between">
             <p className="text-sm text-teal-700 font-medium">
-              {selectedIds.length} destination{selectedIds.length > 1 ? 's' : ''} selected
+              {selectedIds.length} destination
+              {selectedIds.length > 1 ? 's' : ''} selected
             </p>
+
             <button
               type="button"
               onClick={handleContinueClick}
@@ -140,6 +181,7 @@ export default function RecommendationsPage() {
           >
             <label className="flex flex-col text-sm text-teal-700 font-medium">
               Number of days
+
               <input
                 type="number"
                 min="1"
@@ -148,8 +190,10 @@ export default function RecommendationsPage() {
                 className="mt-1 w-32 px-3 py-2 rounded-lg border border-sage-500 bg-white focus:outline-none focus:ring-2 focus:ring-gold-500"
               />
             </label>
+
             <label className="flex flex-col text-sm text-teal-700 font-medium">
               Hours per day
+
               <input
                 type="number"
                 min="1"
@@ -159,8 +203,47 @@ export default function RecommendationsPage() {
               />
             </label>
 
+            <div className="flex flex-col text-sm text-teal-700 font-medium">
+              Total trip budget (₹) — optional
+
+              <div className="flex gap-2 mt-1 mb-2">
+                {['budget', 'moderate', 'premium'].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handlePresetClick(preset)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      budgetPreset === preset
+                        ? 'bg-teal-600 text-base border-teal-600'
+                        : 'bg-white text-teal-700 border-sage-500 hover:border-teal-500'
+                    }`}
+                  >
+                    {preset === 'budget'
+                      ? 'Budget'
+                      : preset === 'moderate'
+                      ? 'Moderate'
+                      : 'Premium'}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="number"
+                min="0"
+                placeholder="Enter a custom amount"
+                value={customBudget}
+                onChange={(e) => {
+                  setCustomBudget(e.target.value);
+                  setBudgetPreset('');
+                }}
+                className="w-48 px-3 py-2 rounded-lg border border-sage-500 bg-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+              />
+            </div>
+
             {tripError && (
-              <p className="text-sm text-clay-600 bg-clay-100 rounded-lg px-3 py-2">{tripError}</p>
+              <p className="text-sm text-clay-600 bg-clay-100 rounded-lg px-3 py-2">
+                {tripError}
+              </p>
             )}
 
             <button

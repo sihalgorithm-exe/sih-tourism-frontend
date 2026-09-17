@@ -48,6 +48,9 @@ export function getImage(obj) {
 export function getLocation(obj) {
   return pick(obj, ['location', 'city', 'address', 'region']);
 }
+export function getCity(obj) {
+  return pick(obj, ['city']);
+}
 
 export function getCategory(obj) {
   return pick(obj, ['category', 'type', 'preferredCategory']);

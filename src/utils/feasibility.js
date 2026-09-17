@@ -1,4 +1,4 @@
-import { getId, getName, getLatLng, getVisitDurationHours, pick } from './fields.js';
+import { getId, getName, getLatLng, getVisitDurationHours, getCity } from './fields.js';
 
 function parseAveragePrice(text) {
   if (!text || typeof text !== 'string') return undefined;
@@ -23,41 +23,12 @@ function parseAverageRating(text) {
  * to the trip's destination coordinates (hotels are within the same
  * city, so this is close enough for routing purposes).
  */
-export function mapHotelToFeasibility(hotel, fallbackLatLng) {
-  const id = getId(hotel);
-  const name = getName(hotel);
-  const latLng = getLatLng(hotel) || fallbackLatLng;
-    const pricePerNight =
-    pick(hotel, ['pricePerNight']) ?? parseAveragePrice(pick(hotel, ['priceRange', 'price'])) ?? 0;
-  const rating = pick(hotel, ['rating']) ?? parseAverageRating(pick(hotel, ['ratingText'])) ?? 0;
-
-  // Only name/coordinates are truly non-negotiable. Price/rating fall back to
-  // 0 rather than dropping the hotel entirely -- an incomplete hotel card is
-  // recoverable in the UI; an empty hotels array kills the whole AI plan.
-  if (!name || !latLng) {
-    return null;
-  }
-
-  return {
-    id,
-    name,
-    latitude: latLng.lat,
-    longitude: latLng.lng,
-    pricePerNight: Number(pricePerNight),
-    rating: Number(rating),
-  };
-}
-
-/**
- * Maps a single Wayfare destination object to the exact shape the
- * Feasibility Checker contract requires. Returns null if any required
- * field is missing, so the caller can validate before redirecting.
- */
 export function mapDestinationToFeasibility(destination) {
   const id = getId(destination);
   const name = getName(destination);
   const latLng = getLatLng(destination);
   const visitDurationHours = getVisitDurationHours(destination);
+  const city = getCity(destination);
 
   if (!name || !latLng || visitDurationHours === undefined) {
     return null;
@@ -69,6 +40,32 @@ export function mapDestinationToFeasibility(destination) {
     latitude: latLng.lat,
     longitude: latLng.lng,
     visitDurationHours,
+    city: city || null, // optional - budget layer skips city-matched costs gracefully if absent
+  };
+}
+/**
+ * Maps a single Wayfare destination object to the exact shape the
+ * Feasibility Checker contract requires. Returns null if any required
+ * field is missing, so the caller can validate before redirecting.
+ */
+export function mapDestinationToFeasibility(destination) {
+  const id = getId(destination);
+  const name = getName(destination);
+  const latLng = getLatLng(destination);
+  const visitDurationHours = getVisitDurationHours(destination);
+  const city = getCity(destination);
+
+  if (!name || !latLng || visitDurationHours === undefined) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    latitude: latLng.lat,
+    longitude: latLng.lng,
+    visitDurationHours,
+    city: city || null, // optional - budget layer skips city-matched costs gracefully if absent
   };
 }
 
@@ -109,21 +106,28 @@ export function buildFeasibilityPayload(
     throw new Error('One or more selected destinations are missing required data.');
   }
 
-    const fallbackLatLng = { lat: mapped[0].latitude, lng: mapped[0].longitude };
-  const mappedHotels = (options.hotels || [])
-    .map((h) => mapHotelToFeasibility(h, fallbackLatLng))
-    .filter((h) => h !== null);
-
-  return {
+  const payload = {
     trip: {
       city: options.city || '',
       numberOfDays: Number(numberOfDays),
       hoursPerDay: Number(hoursPerDay),
     },
     destinations: mapped,
-    hotels: mappedHotels,
+    hotels: options.hotels || [],
     preferences: options.preferences || {},
+    // Curated transport cost dataset, embedded so the Feasibility Checker
+    // (which has no backend of its own) can compute a budget estimate
+    // without needing any new network dependency of its own.
+    travelEstimates: options.travelEstimates || [],
   };
+
+  // Budget is entirely optional - omit it and everything behaves exactly
+  // as it did before this feature existed.
+  if (options.totalBudget !== undefined && options.totalBudget !== null && options.totalBudget !== '') {
+    payload.trip.totalBudget = Number(options.totalBudget);
+  }
+
+  return payload;
 }
 
 /**
