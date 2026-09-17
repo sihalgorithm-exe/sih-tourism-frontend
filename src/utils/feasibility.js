@@ -17,6 +17,63 @@ function parseAverageRating(text) {
   return Math.min(5, avg);
 }
 
+/**
+ * Groups already-mapped destinations by city and averages their
+ * coordinates. Hotels have no lat/long of their own (not present in the
+ * CSV import), so this gives a reasonable, clearly-approximate stand-in:
+ * "somewhere near the middle of where you're actually going in that city."
+ */
+function computeCityCentroids(mappedDestinations) {
+  const groups = {};
+  for (const d of mappedDestinations) {
+    if (!d.city) continue;
+    if (!groups[d.city]) groups[d.city] = { latSum: 0, lngSum: 0, count: 0 };
+    groups[d.city].latSum += d.latitude;
+    groups[d.city].lngSum += d.longitude;
+    groups[d.city].count += 1;
+  }
+  const centroids = {};
+  for (const city of Object.keys(groups)) {
+    const g = groups[city];
+    centroids[city] = { lat: g.latSum / g.count, lng: g.lngSum / g.count };
+  }
+  return centroids;
+}
+
+/**
+ * Adapts a raw Wayfare Hotel object (free-text priceRange/ratingText/
+ * amenities, per the CSV-driven schema) into the clean numeric shape the
+ * AI Planner's contract requires. Returns null if price or rating can't be
+ * parsed into a usable number - such a hotel is excluded rather than sent
+ * with an invented number.
+ */
+function mapHotelToFeasibility(hotel, cityCentroids) {
+  const id = getId(hotel);
+  const name = getName(hotel);
+  const pricePerNight = parseAveragePrice(hotel.priceRange);
+  const rating = parseAverageRating(hotel.ratingText);
+
+  if (!id || !name || pricePerNight === undefined || rating === undefined) {
+    return null;
+  }
+
+  let latitude = hotel.latitude;
+  let longitude = hotel.longitude;
+
+  if ((latitude === null || latitude === undefined || longitude === null || longitude === undefined)) {
+    const centroid = cityCentroids[hotel.city];
+    if (!centroid) return null; // no coordinates and no city fallback available
+    latitude = centroid.lat;
+    longitude = centroid.lng;
+  }
+
+  const amenities = typeof hotel.amenities === 'string'
+    ? hotel.amenities.split(',').map((a) => a.trim()).filter(Boolean)
+    : Array.isArray(hotel.amenities) ? hotel.amenities : [];
+
+  return { id, name, latitude, longitude, pricePerNight, rating, amenities };
+}
+
 export function mapDestinationToFeasibility(destination) {
   const id = getId(destination);
   const name = getName(destination);
@@ -75,6 +132,15 @@ export function buildFeasibilityPayload(
     throw new Error('One or more selected destinations are missing required data.');
   }
 
+  const cityCentroids = computeCityCentroids(mapped);
+  const mappedHotels = (options.hotels || [])
+    .map((h) => mapHotelToFeasibility(h, cityCentroids))
+    .filter((h) => h !== null);
+
+  if ((options.hotels || []).length > 0 && mappedHotels.length === 0) {
+    throw new Error('None of the available hotels have usable price, rating, or location data for this trip.');
+  }
+
   const payload = {
     trip: {
       city: options.city || '',
@@ -82,7 +148,7 @@ export function buildFeasibilityPayload(
       hoursPerDay: Number(hoursPerDay),
     },
     destinations: mapped,
-    hotels: options.hotels || [],
+    hotels: mappedHotels,
     preferences: options.preferences || {},
     // Curated transport cost dataset, embedded so the Feasibility Checker
     // (which has no backend of its own) can compute a budget estimate
