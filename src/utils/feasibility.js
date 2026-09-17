@@ -17,18 +17,11 @@ function parseAverageRating(text) {
   return Math.min(5, avg);
 }
 
-/**
- * Maps a raw backend Hotel object to the exact shape the AI Planner
- * requires. The Hotel entity has no lat/lng of its own, so it falls back
- * to the trip's destination coordinates (hotels are within the same
- * city, so this is close enough for routing purposes).
- */
 export function mapDestinationToFeasibility(destination) {
   const id = getId(destination);
   const name = getName(destination);
   const latLng = getLatLng(destination);
   const visitDurationHours = getVisitDurationHours(destination);
-  const city = getCity(destination);
 
   if (!name || !latLng || visitDurationHours === undefined) {
     return null;
@@ -40,32 +33,6 @@ export function mapDestinationToFeasibility(destination) {
     latitude: latLng.lat,
     longitude: latLng.lng,
     visitDurationHours,
-    city: city || null, // optional - budget layer skips city-matched costs gracefully if absent
-  };
-}
-/**
- * Maps a single Wayfare destination object to the exact shape the
- * Feasibility Checker contract requires. Returns null if any required
- * field is missing, so the caller can validate before redirecting.
- */
-export function mapDestinationToFeasibility(destination) {
-  const id = getId(destination);
-  const name = getName(destination);
-  const latLng = getLatLng(destination);
-  const visitDurationHours = getVisitDurationHours(destination);
-  const city = getCity(destination);
-
-  if (!name || !latLng || visitDurationHours === undefined) {
-    return null;
-  }
-
-  return {
-    id,
-    name,
-    latitude: latLng.lat,
-    longitude: latLng.lng,
-    visitDurationHours,
-    city: city || null, // optional - budget layer skips city-matched costs gracefully if absent
   };
 }
 
