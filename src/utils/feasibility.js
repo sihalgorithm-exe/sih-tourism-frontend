@@ -22,6 +22,7 @@ export function mapDestinationToFeasibility(destination) {
   const name = getName(destination);
   const latLng = getLatLng(destination);
   const visitDurationHours = getVisitDurationHours(destination);
+  const city = getCity(destination);
 
   if (!name || !latLng || visitDurationHours === undefined) {
     return null;
@@ -33,6 +34,7 @@ export function mapDestinationToFeasibility(destination) {
     latitude: latLng.lat,
     longitude: latLng.lng,
     visitDurationHours,
+    city: city || null,
   };
 }
 
