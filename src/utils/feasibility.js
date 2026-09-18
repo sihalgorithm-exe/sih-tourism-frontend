@@ -94,7 +94,6 @@ export function mapDestinationToFeasibility(destination) {
     city: city || null,
   };
 }
-
 /**
  * Validates trip-level inputs (days/hours). Returns an error message
  * string, or null if valid.
@@ -132,15 +131,6 @@ export function buildFeasibilityPayload(
     throw new Error('One or more selected destinations are missing required data.');
   }
 
-  const cityCentroids = computeCityCentroids(mapped);
-  const mappedHotels = (options.hotels || [])
-    .map((h) => mapHotelToFeasibility(h, cityCentroids))
-    .filter((h) => h !== null);
-
-  if ((options.hotels || []).length > 0 && mappedHotels.length === 0) {
-    throw new Error('None of the available hotels have usable price, rating, or location data for this trip.');
-  }
-
   const payload = {
     trip: {
       city: options.city || '',
@@ -148,7 +138,7 @@ export function buildFeasibilityPayload(
       hoursPerDay: Number(hoursPerDay),
     },
     destinations: mapped,
-    hotels: mappedHotels,
+    hotels: options.hotels || [],
     preferences: options.preferences || {},
     // Curated transport cost dataset, embedded so the Feasibility Checker
     // (which has no backend of its own) can compute a budget estimate
