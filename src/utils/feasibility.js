@@ -1,5 +1,6 @@
 import { getId, getName, getLatLng, getVisitDurationHours, getCity } from './fields.js';
 
+
 function parseAveragePrice(text) {
   if (!text || typeof text !== 'string') return undefined;
   const numbers = text.match(/[\d,]+(?:\.\d+)?/g);
@@ -91,7 +92,7 @@ export function mapDestinationToFeasibility(destination) {
     latitude: latLng.lat,
     longitude: latLng.lng,
     visitDurationHours,
-    city: city || null,
+    city,
   };
 }
 /**
