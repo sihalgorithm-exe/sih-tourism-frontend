@@ -85,12 +85,4 @@ endpoint. So:
   wired up as a placeholder, but no live Maps JS SDK embed was added since
   I can't test API-key-gated network calls in this environment. Detail
   pages currently link out to Google Maps search using lat/lng if the
-  backend returns coordinates. If you want an embedded interactive map
-  instead, share your Maps API key setup and I'll wire it in.
-- **Not tested against a running backend** — I don't have network access
-  in this environment. Please run through the verification checklist
-  (register → login → JWT sent → each listing loads → recommendations →
-  preferences GET/PUT → group create/access → location submit → alerts)
-  and report back the exact endpoint/status/response for anything that
-  fails, per your instructions — I will not guess at backend behavior to
-  "fix" a mismatch.
+  backend returns coordinates. 
