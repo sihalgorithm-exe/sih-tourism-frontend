@@ -52,9 +52,6 @@ export function getLocation(obj) {
 export function getCity(obj) {
   return pick(obj, ['city']);
 }
-export function getCity(obj) {
-  return pick(obj, ['city']);
-}
 
 export function getCategory(obj) {
   return pick(obj, ['category', 'type', 'preferredCategory']);
