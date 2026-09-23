@@ -6,7 +6,7 @@ import { getHotelsByCity } from '../api/hotels.js';
 import PlaceCard from '../components/PlaceCard.jsx';
 import { LoadingState, ErrorState, EmptyState } from '../components/StateViews.jsx';
 import CategoryIcon from '../components/CategoryIcon.jsx';
-import { getId } from '../utils/fields.js';
+import { getId, getCity } from '../utils/fields.js';
 import {
   buildFeasibilityPayload,
   validateTripInputs,
@@ -69,8 +69,9 @@ export default function RecommendationsPage() {
     }
 
     try {
+      const city = getCity(selectedDestinations[0]);
       const [hotels, travelEstimates] = await Promise.all([
-        getAllHotels(),
+        city ? getHotelsByCity(city) : getAllHotels(),
         getAllTravelEstimates(),
       ]);
 
