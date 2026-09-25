@@ -1,88 +1,72 @@
-# Wayfare: Tourism Frontend
+# Wayfare Frontend
 
-React + Vite + JavaScript (no TypeScript) frontend for the existing Spring Boot
-tourism backend at `sihalgorithm-exe/sih-tourism-backend`. Built strictly
-against `API.md` — no endpoints, fields, or auth behavior were invented.
+Wayfare is a tourism platform that brings destination discovery, recommendations, trip planning and group travel features into one application.
 
-## Setup
+This repository contains the main frontend of Wayfare. It is built with React and Vite and communicates with the Spring Boot backend through REST APIs.
+
+##  Highlights
+
+- Explore destinations, hotels, food, shopping and transport
+- Discover places by state and city
+- Get recommendations based on trip preferences
+- Check whether a selected trip is practical before planning it
+- Create and manage travel groups
+- GroupGuard features for group travel safety
+- JWT based authentication
+- Location support and Google Maps links
+- Responsive interface using Tailwind CSS
+
+## Overview
+
+The frontend is the main user interface for Wayfare. Users can explore tourism information, select places they want to visit, manage their preferences and move through the trip planning process.
+
+The application communicates with the Wayfare Spring Boot backend for authentication, tourism data, recommendations, groups and other services.
+
+At the current stage, the platform is focused mainly on tourism in Andhra Pradesh and Telangana.
+
+## Usage
+
+Start the application and open it in a browser at `http://localhost:5173`.
+
+The frontend needs the Wayfare backend to be running and reachable through the API URL configured in the environment file.
+
+## Installation
 
 ```bash
+git clone https://github.com/sihalgorithm-exe/sih-tourism-frontend.git
+cd sih-tourism-frontend
 npm install
-cp .env.example .env
-# edit .env: set VITE_API_BASE_URL to your running backend, e.g.
-# VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+Create `.env` from `.env.example` and set:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+Then run:
+
+```bash
 npm run dev
 ```
 
-The app runs at `http://localhost:5173` by default. Make sure the backend is
-running and reachable at the URL you set in `.env`, and that its CORS
-configuration allows requests from the frontend's origin (this frontend does
-not and should not attempt to modify backend CORS config).
+## Authentication
 
-## Project structure
+Wayfare uses JWT based authentication.
 
-```
-src/
-  api/            one file per resource, thin wrappers around axios calls
-                  matching API.md exactly (auth, destinations, food, hotels,
-                  shopping, transport, groups, recommendations, preferences)
-  context/        AuthContext — owns the JWT + user, persists to localStorage
-  components/     shared UI (Navbar, cards, form field, state views, icons)
-  hooks/          useApiData (loading/error/data), useGeolocation
-  pages/          one page per route; ListingPage/DetailPage are generic
-                  and reused by destinations/food/hotels/shopping/transport
-  utils/          apiError (user-facing error messages), fields (defensive
-                  field access for entity objects), groupHistory (local
-                  convenience list of visited group IDs — not backend data)
-```
+The frontend attaches the JWT to authenticated API requests. If the backend returns a `401` response because the session is no longer valid, the stored session is cleared and the user is taken back to the login flow.
 
-## Auth
+Authorization is enforced by the backend.
 
-- JWT is stored in `localStorage` under `authToken`; user summary under
-  `authUser`.
-- Every request through `src/api/axiosClient.js` attaches
-  `Authorization: Bearer <token>` automatically when a token is present.
-- A `401` response anywhere clears the stored session and surfaces a
-  "session expired" message on next visit to `/login`.
-- The frontend never sends a user ID to endpoints that derive identity from
-  the JWT (groups, locations, alerts, recommendations, preferences) — this
-  matches API.md's explicit note that the client must not do this.
+## Related Projects
 
-## Data model safety
+- [Wayfare Backend](https://github.com/sihalgorithm-exe/sih-tourism-backend)
+- [Trip Feasibility](https://github.com/sihalgorithm-exe/trip-feasibility)
+- [Wayfare AI Frontend](https://github.com/sihalgorithm-exe/wayfare-ai-frontend)
+- [Wayfare AI Backend](https://github.com/sihalgorithm-exe/wayfare-ai-backend)
 
-`API.md` doesn't pin down the exact fields on `Destination`, `FoodPlace`,
-`Hotel`, `ShoppingPlace`, or `TransportOption` beyond "an object of this
-type." Rather than guessing a schema and risking `undefined` rendering
-everywhere, `src/utils/fields.js` reads a small set of plausible key names
-per concept (e.g. `name`/`title`/`placeName`) and simply omits the UI
-element if none are present. If your backend's actual field names don't
-match what's tried there, the fix is to add the real key name to the
-relevant `pick(...)` list in `fields.js` — nothing else needs to change.
+## About
 
-**Action needed from you:** once you run this against the live backend,
-check the Network tab for one real response per resource type and tell me
-the actual field names if they differ from what's covered — I'll update
-`fields.js` precisely rather than guessing further.
+Wayfare is being developed by the `Algorithm.exe` team as part of Smart India Hackathon.
 
-## Groups feature
 
-API.md exposes create/get-by-id for groups but no "list my groups"
-endpoint. So:
-- `/groups` lets you create a new group (navigates to its detail page) or
-  open an existing one by ID.
-- Recently created/opened group IDs are remembered in `localStorage`
-  (`utils/groupHistory.js`) purely as a navigation convenience — this is
-  not backend data and is never presented as such.
-- On a group's detail page, the "Add member," and "Safety alerts" sections
-  only render for the user identified as leader (`group.leaderId === user.userId`
-  from the JWT-derived session) — this is a UX convenience only. The actual
-  authorization boundary is enforced server-side per API.md (403 responses
-  are surfaced as-is, not hidden).
-
-## What was not implemented / needs your input
-
-- **Google Maps Platform**: an env var (`VITE_GOOGLE_MAPS_API_KEY`) is
-  wired up as a placeholder, but no live Maps JS SDK embed was added since
-  I can't test API-key-gated network calls in this environment. Detail
-  pages currently link out to Google Maps search using lat/lng if the
-  backend returns coordinates. 
