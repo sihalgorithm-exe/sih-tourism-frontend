@@ -205,7 +205,7 @@ export default function RecommendationsPage() {
             </label>
 
             <div className="flex flex-col text-sm text-teal-700 font-medium">
-              Total trip budget (₹) — optional
+              Total trip budget (₹)
 
               <div className="flex gap-2 mt-1 mb-2">
                 {['budget', 'moderate', 'premium'].map((preset) => (
